@@ -1,4 +1,5 @@
 import type { Scenario } from '../store/useNocturaStore'
+import { geoReferences, geoToScene } from './geospatial'
 
 export type Vec3 = [number, number, number]
 
@@ -22,9 +23,16 @@ export type BuildingSpec = {
   floors?: number
 }
 
-// Facts used only when they are explicitly documented by public sources.
-// The 450 m jetty and >200 m central mole come from the regional heritage inventory (2015 survey).
-// The 100 m entrance width is reported by current 2026 nautical information sources.
+export type PontoonSpec = {
+  id: string
+  x: number
+  z: number
+  length: number
+  angle: number
+  positionConfidence: 'real-anchor' | 'provisional'
+}
+
+// Facts used only when explicitly documented by public sources.
 export const verifiedPortFacts = {
   northernJettyLengthM: 450,
   centralMoleLengthM: 205,
@@ -32,8 +40,19 @@ export const verifiedPortFacts = {
   heritageSurveyCorePiers: 8,
 }
 
-// V1 visual calibration layer.
-// Building positions remain provisional scene coordinates and are intentionally isolated from future SIG coordinates.
+const geoById = new Map(geoReferences.map((point) => [point.id, point]))
+
+function geoPosition(id: string, y = 0): Vec3 | null {
+  const point = geoById.get(id)
+  return point ? geoToScene(point.latitude, point.longitude, y) : null
+}
+
+function xz(id: string, fallback: [number, number]) {
+  const point = geoPosition(id)
+  return point ? { x: point[0], z: point[2], confidence: 'real-anchor' as const } : { x: fallback[0], z: fallback[1], confidence: 'provisional' as const }
+}
+
+// V1 visual calibration layer. Buildings are still provisional until their SIG footprints are imported.
 export const buildings: BuildingSpec[] = [
   { id: 'capitainerie', label: 'Capitainerie', position: [-58, 5, 70], size: [28, 10, 16], rotationY: -0.16, wall: '#e8d9b9', roof: '#b87553', floors: 2 },
   { id: 'harbor-office', label: 'Bâtiment portuaire', position: [-24, 4, 86], size: [20, 8, 12], rotationY: -0.08, wall: '#efe7d2', roof: '#b66f4a', floors: 2 },
@@ -43,6 +62,13 @@ export const buildings: BuildingSpec[] = [
   { id: 'service-west', label: 'Service portuaire', position: [-100, 4, 51], size: [18, 8, 12], rotationY: -0.22, wall: '#d9d1bd', roof: '#855c4a', floors: 1 },
 ]
 
+const pierB = geoPosition('B', 2.2) ?? [-52, 2.2, -24]
+const pierC = geoPosition('C', 2.2) ?? [-31, 2.2, -44]
+const pierD = geoPosition('D', 2.2) ?? [-10, 2.2, -62]
+const pierE = geoPosition('E', 2.2) ?? [12, 2.2, -79]
+const pierF = geoPosition('F', 2.2) ?? [34, 2.2, -94]
+const pierH = geoPosition('H', 2.2) ?? [77, 2.2, -111]
+
 export const harborLights: HarborLight[] = [
   { id: 'L-001', label: 'Quai ouest 01', position: [-90, 5.5, 42], zone: 'quay', basePowerW: null, note: 'Position V1 à recalibrer sur inventaire portuaire.' },
   { id: 'L-002', label: 'Quai ouest 02', position: [-62, 5.5, 39], zone: 'quay', basePowerW: null, note: 'Position V1 à recalibrer sur inventaire portuaire.' },
@@ -50,16 +76,16 @@ export const harborLights: HarborLight[] = [
   { id: 'L-004', label: 'Quai central 02', position: [10, 5.5, 36], zone: 'quay', basePowerW: null, note: 'Position V1 à recalibrer sur inventaire portuaire.' },
   { id: 'L-005', label: 'Promenade 01', position: [43, 5.5, 84], zone: 'promenade', basePowerW: null, note: 'Position V1 à recalibrer sur inventaire portuaire.' },
   { id: 'L-006', label: 'Promenade 02', position: [78, 5.5, 86], zone: 'promenade', basePowerW: null, note: 'Position V1 à recalibrer sur inventaire portuaire.' },
-  { id: 'L-007', label: 'Feu / entrée de port', position: [0, 6.2, -176], zone: 'entrance', basePowerW: null, note: 'Point de démonstration positionné sur l’entrée, à recalibrer précisément.' },
+  { id: 'L-007', label: 'Feu / entrée de port', position: [0, 6.2, -176], zone: 'entrance', basePowerW: null, note: 'Point de démonstration ; position exacte à confirmer.' },
   { id: 'L-008', label: 'Capitainerie', position: [-58, 5.2, 58], zone: 'building', basePowerW: null, note: 'Point de démonstration V1.' },
-  { id: 'P-A1', label: 'Ponton A', position: [-73, 2.2, -4], zone: 'pontoon', basePowerW: null, note: 'Borne lumineuse V1.' },
-  { id: 'P-B1', label: 'Ponton B', position: [-52, 2.2, -24], zone: 'pontoon', basePowerW: null, note: 'Borne lumineuse V1.' },
-  { id: 'P-C1', label: 'Ponton C', position: [-31, 2.2, -44], zone: 'pontoon', basePowerW: null, note: 'Borne lumineuse V1.' },
-  { id: 'P-D1', label: 'Ponton D', position: [-10, 2.2, -62], zone: 'pontoon', basePowerW: null, note: 'Borne lumineuse V1.' },
-  { id: 'P-E1', label: 'Ponton E', position: [12, 2.2, -79], zone: 'pontoon', basePowerW: null, note: 'Borne lumineuse V1.' },
-  { id: 'P-F1', label: 'Ponton F', position: [34, 2.2, -94], zone: 'pontoon', basePowerW: null, note: 'Borne lumineuse V1.' },
-  { id: 'P-G1', label: 'Ponton G', position: [56, 2.2, -105], zone: 'pontoon', basePowerW: null, note: 'Borne lumineuse V1.' },
-  { id: 'P-H1', label: 'Ponton H', position: [77, 2.2, -111], zone: 'pontoon', basePowerW: null, note: 'Borne lumineuse V1.' },
+  { id: 'P-A1', label: 'Ponton A', position: [-73, 2.2, -4], zone: 'pontoon', basePowerW: null, note: 'Position provisoire : ancrage géographique public non encore vérifié.' },
+  { id: 'P-B1', label: 'Panne B', position: pierB, zone: 'pontoon', basePowerW: null, note: 'Centre géographique recalé sur OpenStreetMap ; luminaire lui-même reste simulé.' },
+  { id: 'P-C1', label: 'Panne C', position: pierC, zone: 'pontoon', basePowerW: null, note: 'Centre géographique recalé sur OpenStreetMap ; luminaire lui-même reste simulé.' },
+  { id: 'P-D1', label: 'Panne D', position: pierD, zone: 'pontoon', basePowerW: null, note: 'Centre géographique recalé sur OpenStreetMap ; luminaire lui-même reste simulé.' },
+  { id: 'P-E1', label: 'Panne E', position: pierE, zone: 'pontoon', basePowerW: null, note: 'Centre géographique recalé sur OpenStreetMap ; luminaire lui-même reste simulé.' },
+  { id: 'P-F1', label: 'Panne F', position: pierF, zone: 'pontoon', basePowerW: null, note: 'Centre géographique recalé sur coordonnées publiées par le CNMT ; luminaire simulé.' },
+  { id: 'P-G1', label: 'Panne G', position: [56, 2.2, -105], zone: 'pontoon', basePowerW: null, note: 'Position provisoire en attente d’un ancrage géographique vérifié.' },
+  { id: 'P-H1', label: 'Panne H', position: pierH, zone: 'pontoon', basePowerW: null, note: 'Centre géographique recalé sur OpenStreetMap ; luminaire lui-même reste simulé.' },
 ]
 
 const scenarioFactors: Record<Scenario, Record<HarborLight['zone'], number>> = {
@@ -73,17 +99,26 @@ export function intensityFor(light: HarborLight, scenario: Scenario) {
   return scenarioFactors[scenario][light.zone]
 }
 
-// Eight core appontements are represented because the regional heritage inventory explicitly documents eight
-// on the central mole. Their exact current 2026 geometry will be replaced with SIG/port data when supplied.
-export const pontoons = [
-  { id: 'A', x: -74, z: -4, length: 105, angle: -0.035 },
-  { id: 'B', x: -53, z: -23, length: 116, angle: -0.025 },
-  { id: 'C', x: -32, z: -43, length: 126, angle: -0.016 },
-  { id: 'D', x: -11, z: -61, length: 135, angle: -0.006 },
-  { id: 'E', x: 11, z: -78, length: 128, angle: 0.006 },
-  { id: 'F', x: 33, z: -93, length: 118, angle: 0.018 },
-  { id: 'G', x: 55, z: -104, length: 105, angle: 0.032 },
-  { id: 'H', x: 76, z: -110, length: 92, angle: 0.047 },
+const A = xz('A', [-74, -4])
+const B = xz('B', [-53, -23])
+const C = xz('C', [-32, -43])
+const D = xz('D', [-11, -61])
+const E = xz('E', [11, -78])
+const F = xz('F', [33, -93])
+const G = xz('G', [56, -105])
+const H = xz('H', [76, -110])
+
+// Centres B/C/D/E/F/H now come from real geographic anchors.
+// Lengths and orientations are still visual approximations until way geometry/SIG data is imported.
+export const pontoons: PontoonSpec[] = [
+  { id: 'A', x: A.x, z: A.z, length: 105, angle: -0.035, positionConfidence: A.confidence },
+  { id: 'B', x: B.x, z: B.z, length: 116, angle: -0.025, positionConfidence: B.confidence },
+  { id: 'C', x: C.x, z: C.z, length: 126, angle: -0.016, positionConfidence: C.confidence },
+  { id: 'D', x: D.x, z: D.z, length: 135, angle: -0.006, positionConfidence: D.confidence },
+  { id: 'E', x: E.x, z: E.z, length: 128, angle: 0.006, positionConfidence: E.confidence },
+  { id: 'F', x: F.x, z: F.z, length: 118, angle: 0.018, positionConfidence: F.confidence },
+  { id: 'G', x: G.x, z: G.z, length: 105, angle: 0.032, positionConfidence: G.confidence },
+  { id: 'H', x: H.x, z: H.z, length: 92, angle: 0.047, positionConfidence: H.confidence },
 ]
 
 export const cameraPresets = {
