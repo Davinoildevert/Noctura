@@ -1,7 +1,7 @@
 {
-  "name": "noctura-porquerolles-3d",
+  "name": "noctura-porquerolles",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,8 +13,7 @@
     "@react-three/fiber": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "three": "latest",
-    "zustand": "latest"
+    "three": "latest"
   },
   "devDependencies": {
     "@types/react": "latest",
