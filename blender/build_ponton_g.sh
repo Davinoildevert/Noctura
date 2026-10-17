@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-blender -b --python blender/build_ponton_g.py
+blender -b --python blender/run_ponton_g.py
 
 echo
 printf 'Generated:\n'
