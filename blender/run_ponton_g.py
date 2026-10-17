@@ -2,8 +2,8 @@ import bpy
 from pathlib import Path
 
 # Compatibility launcher for the Panne G builder.
-# Blender 5.x exposes EEVEE as BLENDER_EEVEE, while some earlier builds
-# exposed BLENDER_EEVEE_NEXT. Detect the available enum instead of assuming.
+# Blender versions differ slightly in render-engine identifiers and factory
+# settings can leave a freshly reset scene without a World datablock.
 
 HERE = Path(__file__).resolve().parent
 TARGET = HERE / "build_ponton_g.py"
@@ -25,10 +25,22 @@ else:
 print(f"NOCTURA: using render engine {engine}")
 
 source = TARGET.read_text(encoding="utf-8")
+
+# Render-engine compatibility.
 source = source.replace('"BLENDER_EEVEE_NEXT"', repr(engine))
+
+# bpy.ops.wm.read_factory_settings(use_empty=True) may leave scene.world = None
+# on Blender 5.x. Create and attach a World before configuring its nodes.
+source = source.replace(
+    "scene.world.use_nodes = True",
+    "if scene.world is None:\n"
+    "    scene.world = bpy.data.worlds.new('NOCTURA_WORLD')\n"
+    "scene.world.use_nodes = True",
+)
 
 namespace = {
     "__name__": "__main__",
     "__file__": str(TARGET),
 }
+
 exec(compile(source, str(TARGET), "exec"), namespace, namespace)
